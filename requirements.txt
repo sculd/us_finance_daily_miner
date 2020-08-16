@@ -1,0 +1,14 @@
+pytz
+PyYAML
+pandas
+google-cloud-storage
+google-cloud-logging
+websockets
+google-cloud-pubsub
+google-cloud-bigquery
+requests
+dicttoxml
+requests_oauthlib
+cython
+finnhub-python
+polygon-api-client

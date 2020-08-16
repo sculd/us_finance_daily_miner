@@ -1,0 +1,8 @@
+__pycache__/
+bin/
+get-pip.py
+lib/
+lib64
+share/
+env_variables.prod.json
+.gitignore

@@ -1,0 +1,10 @@
+credential.json
+env_variables.prod.json
+data
+data/*
+data/2020*
+keyfile.json
+**/__pycache__
+*.pyc
+ingest/streaming/crypto/csvfile_run.py
+token.pickle
