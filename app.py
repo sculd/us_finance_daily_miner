@@ -16,9 +16,9 @@ app = Flask(__name__)
 def run():
     date = datetime.date.today() - datetime.timedelta(days=1)
     date = request.args.get('date') if request.args.get('date') else date
-    table_id = request.args.get('table_id') if request.args.get('table_id') else daily_stock.TABLE_ID_DAILY
-    daily_stock.export_daily_aggregate_snp500(str(date), table_id=table_id)
-    daily_stock.export_daily_aggregate(str(date), table_id=table_id)
+    snp500_table_id = request.args.get('table_id') if request.args.get('snp500_table_id') else daily_stock.TABLE_ID_DAILY
+    daily_stock.export_daily_aggregate_snp500(str(date), table_id=snp500_table_id)
+    daily_stock.export_daily_aggregate(str(date))
     return 'done'
 
 @app.route('/hello', methods=['GET'])
