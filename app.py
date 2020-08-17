@@ -3,7 +3,7 @@ import os, time, datetime, logging
 logging.basicConfig(level=logging.DEBUG)
 
 from flask import Flask, request
-import daily_sp500
+import daily_stock
 
 # make sure these libraries don't log debug statement which can contain
 # sensitive information
@@ -16,9 +16,9 @@ app = Flask(__name__)
 def run():
     date = datetime.date.today() - datetime.timedelta(days=1)
     date = request.args.get('date') if request.args.get('date') else date
-    table_id = request.args.get('table_id') if request.args.get('table_id') else daily_sp500.TABLE_ID_DAILY
-    logging.info('date: {date}, table_id: {table_id}'.format(date=str(date), table_id=table_id))
-    daily_sp500.export_daily_aggregate(str(date), table_id=table_id)
+    table_id = request.args.get('table_id') if request.args.get('table_id') else daily_stock.TABLE_ID_DAILY
+    daily_stock.export_daily_aggregate_snp500(str(date), table_id=table_id)
+    daily_stock.export_daily_aggregate(str(date), table_id=table_id)
     return 'done'
 
 @app.route('/hello', methods=['GET'])

@@ -1,4 +1,4 @@
-import os, datetime
+import os, datetime, logging
 #os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(os.getcwd(), 'credential.json')
 
 import csv
@@ -10,7 +10,8 @@ from google.cloud import bigquery
 
 _PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT')
 _DATASET_ID_EQUITY = 'daily_market_data_equity'
-TABLE_ID_DAILY = 'daily_snp500'
+TABLE_ID_DAILY_SNP500 = 'daily_snp500'
+TABLE_ID_DAILY = 'daily'
 _TABLE_ID_DAILY_TEMP = 'temp'
 _WRITE_QUEUE_SIZE_THRESHOLD = 4000
 _POLYGON_API_KEY = os.environ['API_KEY_POLYGON']
@@ -37,8 +38,7 @@ def _get_snp500_constituents():
 def _get_daily_aggregate_results(date_str):
     resp = _polygon_client.stocks_equities_grouped_daily("us", "stocks", date_str)
     results = resp.results
-    snp500_constituents = _get_snp500_constituents()
-    return [r for r in results if r['T'] in snp500_constituents]
+    return results
 
 def _write_rows(rows, table_id):
     if not rows:
@@ -62,7 +62,19 @@ def _export_results(results, table_id):
     rows = [_result_to_row(result) for result in results]
     _write_rows(rows, table_id)
 
+def export_daily_aggregate_snp500(date_str, table_id=TABLE_ID_DAILY_SNP500):
+    results = _get_daily_aggregate_results(date_str)
+    snp500_constituents = _get_snp500_constituents()
+    results_snp500 = [r for r in results if r['T'] in snp500_constituents]
+    logging.info('daily export snp500 symbols, date: {date}, table_id: {table_id}'.format(date=date_str, table_id=table_id))
+    _export_results(results_snp500, table_id)
+
 def export_daily_aggregate(date_str, table_id=TABLE_ID_DAILY):
     results = _get_daily_aggregate_results(date_str)
-    _export_results(results, table_id)
+    date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+    table_id_y = '{t}_{y}'.format(t=table_id, y=date.year)
+    logging.info('daily export full symbols, date: {date}, table_id: {table_id}'.format(date=date_str, table_id=table_id_y))
+    _export_results(results, table_id_y)
 
+if __name__ == '__main__':
+    export_daily_aggregate('2020-08-15')
