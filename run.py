@@ -25,7 +25,7 @@ def run_deploy(project_id, env_vars_dict):
         'beta',
         'run',
         'deploy',
-        'bigquery-data-anonymizer',
+        'us-finance-daily-miner',
         '--image',
         'gcr.io/{project_id}/us_finance_daily_miner'.format(project_id=project_id),
         '--project={project_id}'.format(project_id=project_id),

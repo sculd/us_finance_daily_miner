@@ -15,10 +15,12 @@ app = Flask(__name__)
 @app.route('/dailysnp500', methods=['GET'])
 def run():
     date = datetime.date.today() - datetime.timedelta(days=1)
-    date = request.args.get('date') if request.args.get('date') else date
-    snp500_table_id = request.args.get('table_id') if request.args.get('snp500_table_id') else daily_stock.TABLE_ID_DAILY
+    if request.args.get('date'):
+        date = datetime.datetime.strptime(request.args.get('date'), "%Y-%m-%d").date()
+    snp500_table_id = request.args.get('snp500_table_id') if request.args.get('snp500_table_id') else daily_stock.TABLE_ID_DAILY_SNP500
     daily_stock.export_daily_aggregate_snp500(str(date), table_id=snp500_table_id)
     daily_stock.export_daily_aggregate(str(date))
+    daily_stock.export_first_day_of_month(str(date))
     return 'done'
 
 @app.route('/hello', methods=['GET'])
