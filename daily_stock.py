@@ -2,19 +2,28 @@ import os, datetime, logging
 #os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(os.getcwd(), 'credential.json')
 
 import csv
+import numpy as np
 import finnhub
 from polygon import RESTClient
 from google.cloud.bigquery.table import Row
-
 from google.cloud import bigquery
+import simfin as sf
+
+sf.set_api_key(os.getenv('API_KEY_SIMFIN'))
+
+# Set the local directory where data-files are stored.
+# The directory will be created if it does not already exist.
+sf.set_data_dir('~/simfin_data/')
 
 _PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT')
-_DATASET_ID_EQUITY = 'daily_market_data_equity'
+_DATASET_ID_EQUITY_DAILY = 'daily_market_data_equity'
 _DATASET_ID_EQUITY_MONTHLY = 'monthly_market_data_equity'
 TABLE_ID_DAILY_SNP500 = 'daily_snp500'
 TABLE_ID_DAILY = 'daily'
+TABLE_ID_DAILY_SIMFIN = 'daily_simfin'
 TABLE_ID_MONTHLY = 'monthly'
 _TABLE_ID_DAILY_TEMP = 'temp'
+_TABLE_ID_DAILY_SIMFIN_TEMP = 'simfin_temp'
 _WRITE_QUEUE_SIZE_THRESHOLD = 4000
 _POLYGON_API_KEY = os.environ['API_KEY_POLYGON']
 _FINNHUB_API_KEY = os.environ['API_KEY_FINNHUB']
@@ -37,55 +46,78 @@ def _get_snp500_constituents():
     r = _finnhub_client.indices_const(symbol = "^GSPC")
     return set(r['constituents'])
 
-def _get_daily_aggregate_results(date_str):
+def _get_daily_polygon_aggregate_results(date_str):
     resp = _polygon_client.stocks_equities_grouped_daily("us", "stocks", date_str)
     results = resp.results
     return results
 
-def _write_rows(rows, dataset_id, table_id):
-    if not rows:
+def _write_rows(bq_rows, dataset_id, table_id):
+    if not bq_rows:
         return
     i = 0
     bq_client = get_big_query_client()
     while True:
-        bq_client.insert_rows(bq_client.get_table(get_full_table_id(dataset_id, table_id)), rows[i:i + _WRITE_QUEUE_SIZE_THRESHOLD])
+        bq_client.insert_rows(bq_client.get_table(get_full_table_id(dataset_id, table_id)), bq_rows[i:i + _WRITE_QUEUE_SIZE_THRESHOLD])
         i += _WRITE_QUEUE_SIZE_THRESHOLD
-        if i >= len(rows):
+        if i >= len(bq_rows):
             break
 
-def _export_results(results, dataset_id, table_id):
-    def _result_to_row(result):
+def _export_polygon_results(results, dataset_id, table_id):
+    def _result_to_bq_row(result):
         vw = result['vw'] if 'vw' in result else None
         return Row(
             (datetime.date.fromtimestamp(int(result['t'] / 1000.0)), result['T'].encode("ascii", "ignore").decode(), result['o'], result['h'], result['l'], result['c'], result['v'], vw),
             {c: i for i, c in enumerate(['date', 'symbol', 'open', 'high', 'low', 'close', 'volume', 'volume_weighted_price'])}
         )
 
-    rows = [_result_to_row(result) for result in results]
-    _write_rows(rows, dataset_id, table_id)
+    bq_rows = [_result_to_bq_row(result) for result in results]
+    _write_rows(bq_rows, dataset_id, table_id)
 
 def export_daily_aggregate_snp500(date_str, table_id=TABLE_ID_DAILY_SNP500):
-    results = _get_daily_aggregate_results(date_str)
+    polygon_results = _get_daily_polygon_aggregate_results(date_str)
     snp500_constituents = _get_snp500_constituents()
-    results_snp500 = [r for r in results if r['T'] in snp500_constituents]
+    results_snp500 = [r for r in polygon_results if r['T'] in snp500_constituents]
     logging.info('daily export snp500 symbols, date: {date}, table_id: {table_id}'.format(date=date_str, table_id=table_id))
-    _export_results(results_snp500, _DATASET_ID_EQUITY, table_id)
+    _export_polygon_results(results_snp500, _DATASET_ID_EQUITY_DAILY, table_id)
 
 def export_daily_aggregate(date_str, table_id=TABLE_ID_DAILY):
-    results = _get_daily_aggregate_results(date_str)
+    results = _get_daily_polygon_aggregate_results(date_str)
     date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
     table_id_y = '{t}_{y}'.format(t=table_id, y=date.year)
     logging.info('daily export full symbols, date: {date}, table_id: {table_id}'.format(date=date_str, table_id=table_id_y))
-    _export_results(results, _DATASET_ID_EQUITY, table_id_y)
+    _export_polygon_results(results, _DATASET_ID_EQUITY_DAILY, table_id_y)
 
 def export_first_day_of_month(date_str, table_id=TABLE_ID_MONTHLY):
-    results = _get_daily_aggregate_results(date_str)
+    results = _get_daily_polygon_aggregate_results(date_str)
     date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
     if date.weekday() != 0 and date.day > 2:
         logging.info('skipping monthly write as it is not the first day of the month, date: {date}'.format(date=date_str))
         return
     logging.info('monthly export full symbols, date: {date}, table_id: {table_id}'.format(date=date_str, table_id=table_id))
-    _export_results(results, _DATASET_ID_EQUITY_MONTHLY, table_id)
+    _export_polygon_results(results, _DATASET_ID_EQUITY_MONTHLY, table_id)
+
+def _export_simfin_df(df, dataset_id, table_id):
+    def _nan_to_none(v):
+        if np.isnan(v):
+            return None
+        return v
+
+    def _df_row_to_bq_row(index, row):
+        return Row(
+            (index[0], index[1].date(), _nan_to_none(row['Open']), _nan_to_none(row['High']), _nan_to_none(row['Low']), _nan_to_none(row['Close']), _nan_to_none(row['Adj. Close']), _nan_to_none(row['Dividend']), _nan_to_none(row['Volume']), _nan_to_none(row['Shares Outstanding'])),
+            {c: i for i, c in enumerate(['Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Adj__Close', 'Dividend', 'Volume', 'Shares_Outstanding'])}
+        )
+
+    bq_rows = [_df_row_to_bq_row(index, row) for index, row in df.iterrows()]
+    _write_rows(bq_rows, dataset_id, table_id)
+
+def export_simfin(date_str, table_id=_TABLE_ID_DAILY_SIMFIN_TEMP):
+    df = sf.load_shareprices(variant='latest', market='us')
+    try:
+        df_date = df.xs(date_str, level=1, drop_level=False)
+        _export_simfin_df(df_date, _DATASET_ID_EQUITY_DAILY, table_id)
+    except Exception as ex:
+        logging.error(ex)
 
 if __name__ == '__main__':
-    export_daily_aggregate('2020-08-15')
+    export_simfin('2020-08-26')

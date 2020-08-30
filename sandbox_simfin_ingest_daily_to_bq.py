@@ -10,7 +10,7 @@ from google.cloud import bigquery
 
 _PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT')
 _DATASET_ID_EQUITY = 'daily_market_data_equity'
-TABLE_ID_DAILY = 'daily'
+TABLE_ID_DAILY = 'daily_simfin'
 _TABLE_ID_DAILY_TEMP = 'temp'
 _WRITE_QUEUE_SIZE_THRESHOLD = 9000
 _POLYGON_API_KEY = os.environ['API_KEY_POLYGON']
@@ -53,10 +53,6 @@ def _export_results(results, table_id):
     rows = [_result_to_row(result) for result in results]
     _write_rows(rows, table_id)
 
-def export_daily_aggregate(date_str, table_id=_TABLE_ID_DAILY_TEMP):
-    results = _get_daily_aggregate_results(date_str)
-    _export_results(results, table_id)
-
 
 def create_table(year):
     schema = [
@@ -66,8 +62,10 @@ def create_table(year):
         bigquery.SchemaField("high", "FLOAT"),
         bigquery.SchemaField("low", "FLOAT"),
         bigquery.SchemaField("close", "FLOAT"),
+        bigquery.SchemaField("adj_close", "FLOAT"),
+        bigquery.SchemaField("dividend", "FLOAT"),
         bigquery.SchemaField("volume", "FLOAT"),
-        bigquery.SchemaField("volume_weighted_price", "FLOAT"),
+        bigquery.SchemaField("shares_outstanding", "FLOAT"),
     ]
 
     full_table_id = get_full_table_id('{t}_{y}'.format(t=TABLE_ID_DAILY, y=year))
@@ -82,14 +80,12 @@ sf.set_api_key(os.getenv('API_KEY_SIMFIN'))
 # The directory will be created if it does not already exist.
 sf.set_data_dir('~/simfin_data/')
 
-#df = sf.load_shareprices(variant='daily', market='us')
-
-df_l = sf.load_shareprices(variant='latest', market='us')
+df = sf.load_shareprices(variant='daily', market='us')
 
 
-for index, row in df_l.iterrows():
-    print(index, index[0], index[1].date(), row['Close'])
-    pass
+for y in range(2010, 2021):
+    df_y = df.xs(slice('{y}-01-01'.format(y=y), '{y}-12-31'.format(y=y)), level='Date', drop_level=False)
+    df_y.to_csv('data/daily_simfin_{y}.csv'.format(y=y))
 
 
 

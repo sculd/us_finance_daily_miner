@@ -13,19 +13,25 @@ _POLYGON_API_KEY = os.environ['API_KEY_POLYGON']
 from shutil import copyfile
 #
 
-#'''
+'''
 recent_date = datetime.date(2020, 8, 11)
 oldest_date = datetime.date(2005, 1, 1)
 
 date = oldest_date
 prev_date = None
 while True:
-    if date == oldest_date or date.month != prev_date.month:
+    if date == oldest_date or date.month != prev_date.month or (date.day <= 3 and date.weekday() == 0) or (date.month == 1 and (date.day <= 4 and date.weekday() < 5)):
         date_1st = date.replace(date.year, date.month, 1)
         src = 'data/daily/daily_{dt}.csv'.format(dt=str(date))
         dst = 'data/monthly/monthly_{dt}.csv'.format(dt=str(date_1st))
         print('from {s} to {d}'.format(s=src, d=dst))
-        copyfile(src, dst)
+
+        with open(dst, 'w') as of:
+            for line in open(src):
+                columns = line.strip().split(',')
+                columns[0] = str(date_1st)
+                of.write(','.join(columns)+'\n')
+        #copyfile(src, dst)
 
     prev_date = date
     date += datetime.timedelta(days=1)

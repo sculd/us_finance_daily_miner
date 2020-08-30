@@ -44,34 +44,72 @@ def _bq_rows_as_csv_file(csv_file_name, rows):
         for row in rows:
             of.write(_bq_row_to_csv_line(row))
 
-
-if __name__ == '__main__':
-    pass
-    #rows = read()
-    #_bq_rows_as_csv_file('marketcap.csv', rows)
-
+'''
 prev_date = None
-with open('us-derived-shareprices-monthly.csv', 'w') as of:
-    of.write('Ticker,SimFinId,Date,Market-Cap,"Price to Earnings Ratio (quarterly)","Price to Earnings Ratio (ttm)","Price to Sales Ratio (quarterly)","Price to Sales Ratio (ttm)","Price to Book Value","Price to Free Cash Flow (quarterly)","Price to Free Cash Flow (ttm)","Enterprise Value",EV/EBITDA,EV/Sales,EV/FCF,"Book to Market Value","Operating Income/EV"\n')
-    for line in open('us-derived-shareprices-daily.csv'):
-        columns = line.split(';')
-        date_str = columns[2]
-        if date_str == 'Date':
+with open('data/SHARADAR_SF1_smallcap_or_larger.csv', 'w') as of:
+    of.write('ticker,dimension,calendardate,datekey,reportperiod,lastupdated,accoci,assets,assetsavg,assetsc,assetsnc,assetturnover,bvps,capex,cashneq,cashnequsd,cor,consolinc,currentratio,de,debt,debtc,debtnc,debtusd,deferredrev,depamor,deposits,divyield,dps,ebit,ebitda,ebitdamargin,ebitdausd,ebitusd,ebt,eps,epsdil,epsusd,equity,equityavg,equityusd,ev,evebit,evebitda,fcf,fcfps,fxusd,gp,grossmargin,intangibles,intexp,invcap,invcapavg,inventory,investments,investmentsc,investmentsnc,liabilities,liabilitiesc,liabilitiesnc,marketcap,ncf,ncfbus,ncfcommon,ncfdebt,ncfdiv,ncff,ncfi,ncfinv,ncfo,ncfx,netinc,netinccmn,netinccmnusd,netincdis,netincnci,netmargin,opex,opinc,payables,payoutratio,pb,pe,pe1,ppnenet,prefdivis,price,ps,ps1,receivables,retearn,revenue,revenueusd,rnd,roa,roe,roic,ros,sbcomp,sgna,sharefactor,sharesbas,shareswa,shareswadil,sps,tangibles,taxassets,taxexp,taxliabilities,tbvps,workingcapital\n')
+    for line in open('data/SHARADAR_SF1.csv'):
+        columns = line.split(',')
+        if columns[60] == 'marketcap':
             continue
-        dt = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-        date = dt.date()
-        if prev_date is not None and date.month != prev_date.month:
-            date_1st = date.replace(date.year, date.month, 1)
-            columns[2] = str(date_1st)
-            of.write(','.join(columns))
+        if columns[60] == '':
+            continue
+        market_cap_m = float(columns[60]) / 1000000
+        if market_cap_m < 600:
+            continue
+        of.write(line)
+'''
 
-        prev_date = date
+'''
+with open('data/universe_monthly_stocks.csv', 'w') as of:
+    of.write('date,symbol\n')
+    for line in open('data/monthly/agg/monthly.csv'):
+        columns = line.split(',')
+        of.write(','.join(columns[:2])+'\n')
+#'''
+
+'''
+with open('data/universe_SF1_monthly.csv', 'w') as of:
+    of.write('symbol,date\n')
+    for line in open('data/universe_SF1.csv'):
+        symbol, date_str = line.split(',')
+        if symbol == 'ticker':
+            continue
+        date = datetime.datetime.strptime(date_str.strip(), '%Y-%m-%d').date()
+        for i in range(3):
+            new_month = (date.month + 1 + i) % 12
+            if new_month == 0:
+                new_month = 12
+            new_yar = date.year + (1 if date.month + 1 + i > 12 else 0)
+            of.write(','.join([symbol, str(date.replace(year=new_yar, month=new_month, day=1))]) + '\n')
+#'''
+
+'''
+monthly_symbols_SF1 = {}
+for line in open('data/universe_SF1_monthly.csv'):
+    symbol, date_str = line.strip().split(',')
+    if date_str not in monthly_symbols_SF1:
+        monthly_symbols_SF1[date_str] = set()
+    monthly_symbols_SF1[date_str].add(symbol)
+
+with open('data/universe_combined.csv', 'w') as of:
+    of.write('date,symbol\n')
+    for line in open('data/universe_monthly_stocks.csv'):
+        date_str, symbol = line.strip().split(',')
+        if date_str not in monthly_symbols_SF1:
+            continue
+        if symbol not in monthly_symbols_SF1[date_str]:
+            continue
+        of.write(','.join([date_str, symbol]) + '\n')
+'''
+
+#for line in open('data/universe_monthly_stocks.csv'):
 
 '''
 monthly_market_caps = {}
 
 import csv
-with open("marketcap.csv", newline='') as csvfile:
+with open("data/marketcap.csv", newline='') as csvfile:
     csv_reader = csv.reader(csvfile, delimiter=',', quotechar='"')
     for row in csv_reader:
         date_str = row[1]

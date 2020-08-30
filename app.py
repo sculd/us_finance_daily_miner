@@ -4,6 +4,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 from flask import Flask, request
 import daily_stock
+import outlier_analysis
 
 # make sure these libraries don't log debug statement which can contain
 # sensitive information
@@ -13,7 +14,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 app = Flask(__name__)
 
 @app.route('/dailysnp500', methods=['GET'])
-def run():
+def handle_dailysnp500():
     date = datetime.date.today() - datetime.timedelta(days=1)
     if request.args.get('date'):
         date = datetime.datetime.strptime(request.args.get('date'), "%Y-%m-%d").date()
@@ -21,6 +22,14 @@ def run():
     daily_stock.export_daily_aggregate_snp500(str(date), table_id=snp500_table_id)
     daily_stock.export_daily_aggregate(str(date))
     daily_stock.export_first_day_of_month(str(date))
+
+    table_id_simfin = request.args.get('table_id_simfin') if request.args.get('table_id_simfin') else daily_stock.TABLE_ID_DAILY_SIMFIN
+    daily_stock.export_simfin(str(date), table_id=table_id_simfin)
+    return 'done'
+
+@app.route('/outlier_analysis', methods=['GET'])
+def handle_outlier_analysis():
+    outlier_analysis.send_email_report()
     return 'done'
 
 @app.route('/hello', methods=['GET'])

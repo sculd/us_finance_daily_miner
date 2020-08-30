@@ -189,8 +189,10 @@ print(finnhub_client.indices_const(symbol = "^GSPC"))
 
 
 #'''
-recent_date = datetime.date(2020, 8, 11)
-oldest_date = datetime.date(2005, 1, 1)
+recent_date = datetime.date(2004, 12, 31)
+oldest_date = datetime.date(2001, 1, 1)
+
+'''
 constituents = {}
 import csv
 with open("data/daily/constituent/historical_components.csv", newline='') as csvfile:
@@ -212,9 +214,10 @@ while True:
         break
 #'''
 
-'''
-recent_date = datetime.date(2020, 8, 11)
-oldest_date = datetime.date(2005, 1, 1)
+recent_date = datetime.date(2004, 12, 31)
+oldest_date = datetime.date(2001, 1, 1)
+
+#'''
 import csv
 date = oldest_date
 while True:
