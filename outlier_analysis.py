@@ -28,7 +28,7 @@ _QUERY = """
 
 _QUERY_SIMFIN = """
     SELECT date, ticker as symbol, close
-    FROM `alpaca-trading-239601.daily_market_data_equity.daily_simfin_2020`
+    FROM `alpaca-trading-239601.daily_market_data_equity.daily_simfin`
     WHERE TRUE
     AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 100 DAY)
     ORDER BY date ASC, symbol
