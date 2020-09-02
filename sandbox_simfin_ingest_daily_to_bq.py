@@ -74,18 +74,54 @@ def create_table(year):
 
 import simfin as sf
 
-sf.set_api_key(os.getenv('API_KEY_SIMFIN'))
+def ingest():
+    sf.set_api_key(os.getenv('API_KEY_SIMFIN'))
 
-# Set the local directory where data-files are stored.
-# The directory will be created if it does not already exist.
-sf.set_data_dir('~/simfin_data/')
+    # Set the local directory where data-files are stored.
+    # The directory will be created if it does not already exist.
+    sf.set_data_dir('~/simfin_data/')
 
-df = sf.load_shareprices(variant='daily', market='us')
+    df = sf.load_shareprices(variant='daily', market='us')
 
-
-for y in range(2010, 2021):
-    df_y = df.xs(slice('{y}-01-01'.format(y=y), '{y}-12-31'.format(y=y)), level='Date', drop_level=False)
-    df_y.to_csv('data/daily_simfin_{y}.csv'.format(y=y))
-
+    for y in range(2010, 2021):
+        df_y = df.xs(slice('{y}-01-01'.format(y=y), '{y}-12-31'.format(y=y)), level='Date', drop_level=False)
+        df_y.to_csv('data/daily_simfin_{y}.csv'.format(y=y))
 
 
+import requests
+import pandas as pd
+
+_SIMFIN_API_KEY = os.getenv('API_KEY_SIMFIN')
+
+# list of tickers we want to get data for
+tickers = ["AAPL", "NVDA", "WMT"]
+
+# define the periods that we want to retrieve
+periods = ["q1", "q2", "q3", "q4"]
+year_start = 2012
+year_end = 2020
+
+# request url for all financial statements
+request_url = 'https://simfin.com/api/v2/companies/prices'
+
+# variable to store the names of the columns
+columns = []
+# variable to store our data
+output = []
+
+# with simfin+, we can retrieve all data in just one call; this is much faster than making individual requests
+# define the parameters for the query
+parameters = {
+    "ticker": ",".join(tickers),
+    "period": "quarters",
+    "start": "2020-08-25",
+    "end": "2020-09-01",
+    "api-key": _SIMFIN_API_KEY}
+# make the request
+request = requests.get(request_url, parameters)
+
+
+# convert response to json
+all_data = request.json()
+
+print(all_data)

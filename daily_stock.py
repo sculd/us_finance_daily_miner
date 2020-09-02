@@ -104,15 +104,16 @@ def _export_simfin_df(df, dataset_id, table_id):
 
     def _df_row_to_bq_row(index, row):
         return Row(
-            (index[0], index[1].date(), _nan_to_none(row['Open']), _nan_to_none(row['High']), _nan_to_none(row['Low']), _nan_to_none(row['Close']), _nan_to_none(row['Adj. Close']), _nan_to_none(row['Dividend']), _nan_to_none(row['Volume']), _nan_to_none(row['Shares Outstanding'])),
-            {c: i for i, c in enumerate(['Ticker', 'Date', 'Open', 'High', 'Low', 'Close', 'Adj__Close', 'Dividend', 'Volume', 'Shares_Outstanding'])}
+            (index[0], index[1].date(), _nan_to_none(row['SimFinId']), _nan_to_none(row['Open']), _nan_to_none(row['High']), _nan_to_none(row['Low']), _nan_to_none(row['Close']), _nan_to_none(row['Adj. Close']), _nan_to_none(row['Dividend']), _nan_to_none(row['Volume']), _nan_to_none(row['Shares Outstanding'])),
+            {c: i for i, c in enumerate(['Ticker', 'Date', 'SimFinId', 'Open', 'High', 'Low', 'Close', 'Adj__Close', 'Dividend', 'Volume', 'Shares_Outstanding'])}
         )
 
     bq_rows = [_df_row_to_bq_row(index, row) for index, row in df.iterrows()]
     _write_rows(bq_rows, dataset_id, table_id)
 
 def export_simfin(date_str, table_id=_TABLE_ID_DAILY_SIMFIN_TEMP):
-    df = sf.load_shareprices(variant='latest', market='us')
+    df = sf.load_shareprices(variant='latest', market='us', refresh_days=1)
+    #df = sf.load_shareprices(variant='daily', market='us')
     try:
         df_date = df.xs(date_str, level=1, drop_level=False)
         _export_simfin_df(df_date, _DATASET_ID_EQUITY_DAILY, table_id)
@@ -120,4 +121,4 @@ def export_simfin(date_str, table_id=_TABLE_ID_DAILY_SIMFIN_TEMP):
         logging.error(ex)
 
 if __name__ == '__main__':
-    export_simfin('2020-08-26')
+    export_simfin('2020-09-01', table_id=TABLE_ID_DAILY_SIMFIN) # _TABLE_ID_DAILY_SIMFIN_TEMP
