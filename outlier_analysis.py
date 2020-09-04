@@ -4,6 +4,11 @@ import os, datetime, logging
 from google.cloud import bigquery
 from google.cloud import bigquery_storage_v1beta1
 
+from collections import defaultdict
+import numpy as np, pandas as pd
+from sklearn import linear_model
+from sklearn.metrics import mean_squared_error, r2_score
+
 _PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT')
 _DATASET_ID_EQUITY = 'daily_market_data_equity'
 _TABLE_ID_DAILY = 'daily'
@@ -52,6 +57,31 @@ def _bq_rows_as_csv_file(csv_file_name, rows):
             of.write(_bq_row_to_csv_line(row))
 
 
+regr = linear_model.LinearRegression()
+
+def _get_r2_score(y, days):
+    global regr
+    l = len(y)
+    if days // 2 > l:
+        return 0
+
+    y = y[-days:]
+    x = np.array([i for i in range(len(y))]).reshape(-1, 1)
+    y = np.array(y).reshape(-1, 1)
+    regr.fit(x, y)
+    y_pred = regr.predict(x)
+    return r2_score(y, y_pred)
+
+def _get_return(y, days):
+    l = len(y)
+    head = max(0, l - days)
+    return (y[-1] - y[head]) / y[head]
+
+def get_momentum_score(y, days):
+    ret =  _get_return(y, days) * _get_r2_score(y, days)
+    if type(ret) is np.ndarray:
+        return ret[0]
+    return ret
 
 symbols_to_graph = []
 
@@ -86,6 +116,22 @@ def get_top_loser_html(df_momentums, recent_date, day):
         if symbol not in symbols_to_graph:
             symbols_to_graph.append(symbol)
 
+    return html_str
+
+def get_top_bottom_mscores_html(df_mscores, day, top=True):
+    global symbols_to_graph
+    display_day = day if day == 1 else int((day / 5) * 7)
+    html_str = ''
+    html_str += '<div style="width: 20%;float:left">\n'
+    html_str += '<p>{top} Over {d} Days</p>\n'.format(top='Top Gainer' if top else 'Bottom Loser', d=display_day)
+    column = 'm_score{d}'.format(d=day)
+    df_select = df_mscores[df_mscores.close > 20].sort_values('m_score{d}'.format(d=day), ascending=not top).head()[['close', column]].rename(columns={column: 'momentum score over {d} days'.format(d=display_day)})
+    html_str += ((df_select * 1).round(3).astype(str) + '').to_html()
+    html_str += '\n</div>\n'
+
+    for symbol in list(df_select.index):
+        if symbol not in symbols_to_graph:
+            symbols_to_graph.append(symbol)
     return html_str
 
 def get_symbol_info_html(symbol):
@@ -147,12 +193,35 @@ def get_report_html():
     html_str = ''
     for d in days:
         html_str += get_top_gainer_html(df_momentums, recent_date, d)
-
     html_str += '<br clear="all" />'
 
     for d in days:
         html_str += get_top_loser_html(df_momentums, recent_date, d)
+    html_str += '<br clear="all" />'
 
+    # m score
+    m_scores_per_symbol = defaultdict(list)
+    symbols = df.close.dropna().index.levels[1]
+    m_days = [20, 60]
+    for symbol in symbols:
+        for i in m_days:
+            print(symbol, i)
+            try:
+                m_scores_per_symbol[symbol].append(get_momentum_score(df.close.dropna().xs(symbol, level=1).values, i))
+            except KeyError as e:
+                print(e)
+
+    df_recent = df.xs(str(recent_date), level=0)
+    df_mscores = pd.DataFrame.from_dict(m_scores_per_symbol, orient='index', columns=['m_score{d}'.format(d=m_day) for m_day in m_days])
+    df_mscores = df_mscores.set_index(df_mscores.index.rename('symbol')).join(df_recent).dropna()
+
+    m_days = [20, 60]
+    for d in m_days:
+        html_str += get_top_bottom_mscores_html(df_mscores, d, top=True)
+    html_str += '<br clear="all" />'
+
+    for d in m_days:
+        html_str += get_top_bottom_mscores_html(df_mscores, d, top=False)
     html_str += '<br clear="all" />'
 
     html_str += add_graph_html(recent_date, symbols_to_graph)

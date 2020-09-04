@@ -16,6 +16,7 @@ RUN pip install pydata-google-auth
 RUN pip install finnhub-python
 RUN pip install polygon-api-client
 RUN pip install simfin
+RUN pip install scikit-learn
 
 
 # Copy local code to the container image.

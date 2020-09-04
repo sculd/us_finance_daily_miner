@@ -112,10 +112,13 @@ def _export_simfin_df(df, dataset_id, table_id):
     _write_rows(bq_rows, dataset_id, table_id)
 
 def export_simfin(date_str, table_id=_TABLE_ID_DAILY_SIMFIN_TEMP):
-    df = sf.load_shareprices(variant='latest', market='us', refresh_days=1)
+    logging.info('daily export simfin data, date: {date}, table_id: {table_id}'.format(date=date_str, table_id=table_id))
+    df = sf.load_shareprices(variant='latest', market='us', refresh_days=0)
     #df = sf.load_shareprices(variant='daily', market='us')
     try:
         df_date = df.xs(date_str, level=1, drop_level=False)
+        if len(df_date) == 0:
+            logging.info('can not find any data for the given date {d}'.format(d=date_str))
         _export_simfin_df(df_date, _DATASET_ID_EQUITY_DAILY, table_id)
     except Exception as ex:
         logging.error(ex)

@@ -4,6 +4,13 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(os.getcwd(), 'creden
 from google.cloud import bigquery
 from google.cloud import bigquery_storage_v1beta1
 
+import matplotlib.pyplot as plt
+import numpy as np, pandas as pd
+from sklearn import linear_model
+from sklearn.metrics import mean_squared_error, r2_score
+
+from collections import defaultdict
+
 _PROJECT_ID = os.getenv('GOOGLE_CLOUD_PROJECT')
 _DATASET_ID_EQUITY = 'daily_market_data_equity'
 _TABLE_ID_DAILY = 'daily'
@@ -31,7 +38,7 @@ _QUERY = """
 
 _QUERY_SIMFIN = """
     SELECT date, ticker as symbol, close
-    FROM `alpaca-trading-239601.daily_market_data_equity.daily_simfin_2020`
+    FROM `alpaca-trading-239601.daily_market_data_equity.daily_simfin`
     WHERE TRUE
     AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 100 DAY)
     ORDER BY date ASC, symbol
@@ -57,10 +64,54 @@ def _bq_rows_as_csv_file(csv_file_name, rows):
 df = read()
 df = df.set_index(['date', 'symbol']).sort_index()
 
+regr = linear_model.LinearRegression()
+
+def _get_r2_score(y, days):
+    global regr
+    l = len(y)
+    if days // 2 > l:
+        return 0
+
+    y = y[-days:]
+    x = np.array([i for i in range(len(y))]).reshape(-1, 1)
+    y = np.array(y).reshape(-1, 1)
+    regr.fit(x, y)
+    y_pred = regr.predict(x)
+    return r2_score(y, y_pred)
+
+def _get_return(y, days):
+    l = len(y)
+    head = max(0, l - days)
+    return (y[-1] - y[head]) / y[head]
+
+def get_momentum_score(y, days):
+    ret =  _get_return(y, days) * _get_r2_score(y, days)
+    if type(ret) is np.ndarray:
+        return ret[0]
+    return ret
+
+
 days = [1, 5, 20, 60]
 for i in days:
     print('rtr{i}m'.format(i=i))
     df['rtr{i}m'.format(i=i)] = df.groupby(level=1).diff(i).close / df.groupby(level=1).shift(i).close
+
+
+m_scores_per_symbol = defaultdict(list)
+symbols = df.close.dropna().index.levels[1]
+m_days = [20, 60]
+for symbol in symbols:
+    for i in m_days:
+        print(symbol, i)
+        try:
+            m_scores_per_symbol[symbol].append(get_momentum_score(df.close.dropna().xs(symbol, level=1).values, i))
+        except KeyError as e:
+            print(e)
+
+
+df_recent = df.xs('2020-08-31', level=0)
+df_mscores = pd.DataFrame.from_dict(m_scores_per_symbol, orient='index', columns=['m_score{d}'.format(d=m_day) for m_day in m_days])
+df_mscores = df_mscores.set_index(df_mscores.index.rename('symbol')).join(df_recent).dropna()
 
 
 df_momentums = df.dropna()
@@ -93,7 +144,6 @@ def get_top_gainer_html(day):
 
     return html_str
 
-
 def get_top_loser_html(day):
     global symbols_to_graph
     display_day = day if day == 1 else int((day / 5) * 7)
@@ -109,6 +159,23 @@ def get_top_loser_html(day):
             symbols_to_graph.append(symbol)
 
     return html_str
+
+def get_top_bottom_mscores_html(day, top=True):
+    global symbols_to_graph
+    display_day = day if day == 1 else int((day / 5) * 7)
+    html_str = ''
+    html_str += '<div style="width: 20%;float:left">\n'
+    html_str += '<p>{top} Gainer Over {d} Days</p>\n'.format(top='Top' if top else 'Bottom', d=display_day)
+    column = 'm_score{d}'.format(d=day)
+    df_select = df_mscores[df_mscores.close > 20].sort_values('m_score20', ascending=not top).head()[['close', column]].rename(columns={column: 'momentum score over {d} days'.format(d=display_day)})
+    html_str += ((df_select * 1).round(3).astype(str) + '').to_html()
+    html_str += '\n</div>\n'
+
+    for symbol in list(df_select.index):
+        if symbol not in symbols_to_graph:
+            symbols_to_graph.append(symbol)
+    return html_str
+
 
 def get_symbol_info_html(symbol):
     html_str = ''
