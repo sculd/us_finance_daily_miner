@@ -205,7 +205,6 @@ def get_report_html():
     m_days = [20, 60]
     for symbol in symbols:
         for i in m_days:
-            print(symbol, i)
             try:
                 m_scores_per_symbol[symbol].append(get_momentum_score(df.close.dropna().xs(symbol, level=1).values, i))
             except KeyError as e:
