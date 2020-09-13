@@ -177,6 +177,8 @@ def add_graph_html(recent_date, symbols):
     return html_str
 
 def get_report_html():
+    global symbols_to_graph
+    symbols_to_graph = []
     df = _read()
     df = df.set_index(['date', 'symbol']).sort_index()
 
