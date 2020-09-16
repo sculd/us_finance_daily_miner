@@ -124,4 +124,7 @@ def export_simfin(date_str, table_id=_TABLE_ID_DAILY_SIMFIN_TEMP):
         logging.error(ex)
 
 if __name__ == '__main__':
-    export_simfin('2020-09-09', table_id=TABLE_ID_DAILY_SIMFIN) # _TABLE_ID_DAILY_SIMFIN_TEMP
+    export_simfin('2020-09-10', table_id=TABLE_ID_DAILY_SIMFIN) # _TABLE_ID_DAILY_SIMFIN_TEMP
+    export_simfin('2020-09-11', table_id=TABLE_ID_DAILY_SIMFIN) # _TABLE_ID_DAILY_SIMFIN_TEMP
+    export_simfin('2020-09-14', table_id=TABLE_ID_DAILY_SIMFIN) # _TABLE_ID_DAILY_SIMFIN_TEMP
+    export_simfin('2020-09-15', table_id=TABLE_ID_DAILY_SIMFIN) # _TABLE_ID_DAILY_SIMFIN_TEMP

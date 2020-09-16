@@ -22,7 +22,11 @@ def handle_dailysnp500():
     daily_stock.export_daily_aggregate_snp500(str(date), table_id=snp500_table_id)
     daily_stock.export_daily_aggregate(str(date))
     daily_stock.export_first_day_of_month(str(date))
+    return 'done'
 
+@app.route('/simfin', methods=['GET'])
+def handle_simfin():
+    date = datetime.date.today() - datetime.timedelta(days=1)
     table_id_simfin = request.args.get('table_id_simfin') if request.args.get('table_id_simfin') else daily_stock.TABLE_ID_DAILY_SIMFIN
     daily_stock.export_simfin(str(date), table_id=table_id_simfin)
     return 'done'
