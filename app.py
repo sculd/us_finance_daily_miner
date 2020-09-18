@@ -1,5 +1,5 @@
 import os, time, datetime, logging
-
+import pytz
 logging.basicConfig(level=logging.DEBUG)
 
 from flask import Flask, request
@@ -15,7 +15,8 @@ app = Flask(__name__)
 
 @app.route('/dailysnp500', methods=['GET'])
 def handle_dailysnp500():
-    date = datetime.date.today() - datetime.timedelta(days=1)
+    pst = pytz.timezone('America/Los_Angeles')
+    date = date = datetime.datetime.now(pst).date() - datetime.timedelta(days=1)
     if request.args.get('date'):
         date = datetime.datetime.strptime(request.args.get('date'), "%Y-%m-%d").date()
     snp500_table_id = request.args.get('snp500_table_id') if request.args.get('snp500_table_id') else daily_stock.TABLE_ID_DAILY_SNP500
@@ -26,7 +27,8 @@ def handle_dailysnp500():
 
 @app.route('/simfin', methods=['GET'])
 def handle_simfin():
-    date = datetime.date.today() - datetime.timedelta(days=1)
+    pst = pytz.timezone('America/Los_Angeles')
+    date = datetime.datetime.now(pst).date() - datetime.timedelta(days=1)
     table_id_simfin = request.args.get('table_id_simfin') if request.args.get('table_id_simfin') else daily_stock.TABLE_ID_DAILY_SIMFIN
     daily_stock.export_simfin(str(date), table_id=table_id_simfin)
     return 'done'
