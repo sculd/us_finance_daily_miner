@@ -17,7 +17,7 @@ _polygon_client = RESTClient(_POLYGON_API_KEY)
 _QUERY = """
     WITH MARKETCAP AS (
     SELECT date, Ticker, ROUND(AVG(market_cap) / 1000000, 0) as avg_market_cap
-    FROM `alpaca-trading-239601.simfin.us_derived_shareprices_monthly` 
+    FROM `trading-290017.simfin.us_derived_shareprices_monthly` 
     WHERE TRUE
     AND MARKET_CAP > 0
     AND MARKET_CAP > 600 * 1000000
@@ -27,7 +27,7 @@ _QUERY = """
     )
     
     SELECT BASE.date, BASE.Ticker as symbol
-    FROM MARKETCAP JOIN `alpaca-trading-239601.simfin.us_derived_shareprices_monthly` AS BASE ON TRUE
+    FROM MARKETCAP JOIN `trading-290017.simfin.us_derived_shareprices_monthly` AS BASE ON TRUE
       AND MARKETCAP.date = BASE.date
       AND MARKETCAP.Ticker = BASE.Ticker
     ORDER BY date, symbol

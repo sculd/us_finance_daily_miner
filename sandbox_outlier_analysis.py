@@ -30,7 +30,7 @@ _polygon_client = RESTClient(_POLYGON_API_KEY)
 
 _QUERY = """
     SELECT *
-    FROM `alpaca-trading-239601.daily_market_data_equity.daily_snp500` 
+    FROM `trading-290017.daily_market_data_equity.daily_snp500` 
     WHERE TRUE
     AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 100 DAY)
     ORDER BY date ASC, symbol
@@ -38,7 +38,7 @@ _QUERY = """
 
 _QUERY_SIMFIN = """
     SELECT date, ticker as symbol, close
-    FROM `alpaca-trading-239601.daily_market_data_equity.daily_simfin`
+    FROM `trading-290017.daily_market_data_equity.daily_simfin`
     WHERE TRUE
     AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 100 DAY)
     ORDER BY date ASC, symbol

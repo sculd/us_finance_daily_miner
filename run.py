@@ -1,6 +1,6 @@
 import argparse, json, subprocess
 
-PROJECT_ID = 'alpaca-trading-239601'
+PROJECT_ID = 'trading-290017'
 
 def _run_command(command, shell=False):
     print(' '.join(command))

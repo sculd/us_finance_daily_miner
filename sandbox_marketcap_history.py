@@ -18,7 +18,7 @@ _finnhub_client = finnhub.Client(api_key=_FINNHUB_API_KEY)
 
 _QUERY = """
     SELECT ticker, calendardate , CAST(AVG(marketcap) / 1000000 AS INT64) AS marketcap
-    FROM `alpaca-trading-239601.core_us_fundametals_data.core_us_fundamentals` 
+    FROM `trading-290017.core_us_fundametals_data.core_us_fundamentals` 
     WHERE TRUE
     AND calendardate != "2020-03-31"
     AND marketcap IS NOT NULL
