@@ -29,6 +29,8 @@ def handle_dailysnp500():
 def handle_simfin():
     pst = pytz.timezone('America/Los_Angeles')
     date = datetime.datetime.now(pst).date() - datetime.timedelta(days=1)
+    if request.args.get('date'):
+        date = datetime.datetime.strptime(request.args.get('date'), "%Y-%m-%d").date()
     table_id_simfin = request.args.get('table_id_simfin') if request.args.get('table_id_simfin') else daily_stock.TABLE_ID_DAILY_SIMFIN
     daily_stock.export_simfin(str(date), table_id=table_id_simfin)
     return 'done'
