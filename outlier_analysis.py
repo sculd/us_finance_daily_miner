@@ -2,7 +2,7 @@ import os, datetime, logging
 #os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(os.getcwd(), 'credential.json')
 
 from google.cloud import bigquery
-from google.cloud import bigquery_storage_v1beta1
+from google.cloud import bigquery_storage
 
 from collections import defaultdict
 import numpy as np, pandas as pd
@@ -18,7 +18,7 @@ _POLYGON_API_KEY = os.environ['API_KEY_POLYGON']
 _FINNHUB_API_KEY = os.environ['API_KEY_FINNHUB']
 
 _bigquery_client = bigquery.Client(project = os.getenv('GOOGLE_CLOUD_PROJECT'))
-_bqstorage_client = bigquery_storage_v1beta1.BigQueryStorageClient()
+_bqstorage_client = bigquery_storage.BigQueryReadClient()
 
 from polygon import RESTClient
 _polygon_client = RESTClient(_POLYGON_API_KEY)
@@ -237,7 +237,7 @@ import ssl
 def send_email_report():
     from_email = Email("sculd3@gmail.com")
     to_email = To("sculd3@gmail.com")
-    subject = "Daily Stock Analysis"
+    subject = "Daily Stock Analysis For " + datetime.date.today().strftime("%Y-%m-%d")
     html_str = get_report_html()
     content = Content("text/html", html_str)
     mail = Mail(from_email, to_email, subject, content)

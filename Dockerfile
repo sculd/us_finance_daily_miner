@@ -7,7 +7,8 @@ RUN pip install pandas numpy
 RUN pip install Flask gunicorn
 RUN pip install RequestsThrottler
 RUN pip install tornado
-RUN pip install google-cloud-bigquery
+RUN pip install google-cloud-bigquery==1.27.2
+RUN pip install google-cloud-bigquery-storage==1.0.0
 RUN pip install --upgrade google-cloud-bigquery[bqstorage,pandas]
 RUN pip install sendgrid
 RUN pip install google-cloud-core
