@@ -8,3 +8,4 @@ keyfile.json
 *.pyc
 ingest/streaming/crypto/csvfile_run.py
 token.pickle
+.idea/*
