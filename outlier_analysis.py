@@ -169,11 +169,12 @@ def get_chart_img_html_tag(symbol, recent_date):
     return html_str
 
 def add_graph_html(recent_date, symbols):
-    html_str = ''
+    html_str = '<div>'
     for symbol in symbols:
         html_str += get_symbol_info_html(symbol)
         html_str += get_chart_img_html_tag(symbol, recent_date)
         html_str += '<br clear="all" />'
+    html_str += '</div>'
     return html_str
 
 def get_report_html():
