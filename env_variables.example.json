@@ -1,0 +1,7 @@
+{
+  "API_KEY_POLYGON": "EditMe",
+  "API_KEY_SIMFIN": "EditMe",
+  "API_KEY_FINNHU": "EditMe",
+  "SENDGRID_API_KEY": "EditMe",
+  "GOOGLE_CLOUD_PROJECT": "EditMe"
+}
