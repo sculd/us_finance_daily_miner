@@ -5,6 +5,7 @@ logging.basicConfig(level=logging.DEBUG)
 from flask import Flask, request
 import daily_stock
 import outlier_analysis
+import outlier_analysis_email
 
 # make sure these libraries don't log debug statement which can contain
 # sensitive information
@@ -37,7 +38,7 @@ def handle_simfin():
 
 @app.route('/outlier_analysis', methods=['GET'])
 def handle_outlier_analysis():
-    outlier_analysis.send_email_report()
+    outlier_analysis_email.send_email_report()
     return 'done'
 
 @app.route('/hello', methods=['GET'])
