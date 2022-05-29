@@ -5,7 +5,6 @@ FROM python:3.7-slim
 # Install production dependencies.
 RUN pip install pandas numpy
 RUN pip install Flask gunicorn
-RUN pip install RequestsThrottler
 RUN pip install tornado
 RUN pip install google-cloud-bigquery==1.27.2
 RUN pip install google-cloud-bigquery-storage==1.0.0
