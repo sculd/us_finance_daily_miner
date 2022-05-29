@@ -76,7 +76,7 @@ def _get_reverse_rtr_(s):
 def get_reverse_rtr_df(df):
     for i in REVERSE_RTR_DAYS:
         print('reverse rtr{i} days'.format(i=i))
-        dfr = df.groupby(level=1)['close'].rolling(20, min_periods=1).apply(_get_reverse_rtr_)
+        dfr = df.groupby(level=1)['close'].rolling(i, min_periods=1).apply(_get_reverse_rtr_)
         df['reverse_rtr{i}m'.format(i=i)] = dfr.droplevel(0, axis="index")
 
     df_reverse_rtr = df.dropna()
