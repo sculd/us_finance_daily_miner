@@ -88,7 +88,7 @@ def get_bottom_reverse_loser_html(df_reverse_rtr, recent_date, day):
 
     return html_str
 
-def get_bottom_mscores_html(df_mscores, day, top=True):
+def get_top_bottom_mscores_html(df_mscores, day, top=True):
     global symbols_to_graph
     display_day = day if day == 1 else int((day / 5) * 7)
     html_str = ''
@@ -96,6 +96,22 @@ def get_bottom_mscores_html(df_mscores, day, top=True):
     html_str += '<p>{top} Over {d} Days</p>\n'.format(top='Top Mscore Gainer' if top else 'Bottom Mscore Loser', d=display_day)
     column = 'm_score{d}'.format(d=day)
     df_select = df_mscores[df_mscores.close > 20].sort_values('m_score{d}'.format(d=day), ascending=not top).head()[['close', column]].rename(columns={column: 'momentum score over {d} days'.format(d=display_day)})
+    html_str += ((df_select * 1).round(3).astype(str) + '').to_html()
+    html_str += '\n</div>\n'
+
+    for symbol in list(df_select.index):
+        if symbol not in symbols_to_graph:
+            symbols_to_graph.append(symbol)
+    return html_str
+
+def get_top_bottom_reverse_mscores_html(df_mscores, day, top=True):
+    global symbols_to_graph
+    display_day = day if day == 1 else int((day / 5) * 7)
+    html_str = ''
+    html_str += '<div style="width: 20%;float:left">\n'
+    html_str += '<p>{top} Over {d} Days</p>\n'.format(top='Top Reverse Mscore Gainer' if top else 'Bottom Reverse Mscore Loser', d=display_day)
+    column = 'm_score{d}'.format(d=day)
+    df_select = df_mscores[df_mscores.close > 20].sort_values('m_score{d}'.format(d=day), ascending=not top).head()[['close', column]].rename(columns={column: 'reverse momentum score over {d} days'.format(d=display_day)})
     html_str += ((df_select * 1).round(3).astype(str) + '').to_html()
     html_str += '\n</div>\n'
 
@@ -176,11 +192,21 @@ def get_report_html():
     df_mscores = outlier_analysis.get_momentum_df(df)
 
     for d in outlier_analysis.MOMENTUM_SCORE_DAYS:
-        html_str += get_bottom_mscores_html(df_mscores, d, top=True)
+        html_str += get_top_bottom_mscores_html(df_mscores, d, top=True)
     html_str += '<br clear="all" />'
 
     for d in outlier_analysis.MOMENTUM_SCORE_DAYS:
-        html_str += get_bottom_mscores_html(df_mscores, d, top=False)
+        html_str += get_top_bottom_mscores_html(df_mscores, d, top=False)
+    html_str += '<br clear="all" />'
+
+    df_reverse_mscores = outlier_analysis.get_reverse_momentum_df(df)
+
+    for d in outlier_analysis.REVERSE_MOMENTUM_DAYS:
+        html_str += get_top_bottom_reverse_mscores_html(df_reverse_mscores, d, top=True)
+    html_str += '<br clear="all" />'
+
+    for d in outlier_analysis.REVERSE_MOMENTUM_DAYS:
+        html_str += get_top_bottom_reverse_mscores_html(df_reverse_mscores, d, top=False)
     html_str += '<br clear="all" />'
 
     html_str += add_graph_html(recent_date, symbols_to_graph)

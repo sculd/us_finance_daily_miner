@@ -26,13 +26,14 @@ _regr = linear_model.LinearRegression()
 
 RTR_DAYS = [1, 5, 20, 60]
 REVERSE_RTR_DAYS = [20, 40, 60]
-MOMENTUM_SCORE_DAYS = [20, 60]
+MOMENTUM_SCORE_DAYS = [20, 40, 60]
+REVERSE_MOMENTUM_DAYS = [20, 40, 60]
 
 _QUERY = """
     SELECT *
     FROM `trading-290017.daily_market_data_equity.daily_snp500` 
     WHERE TRUE
-    AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 100 DAY)
+    AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 150 DAY)
     ORDER BY date ASC, symbol
 """
 
@@ -40,7 +41,7 @@ _QUERY_SIMFIN = """
     SELECT date, ticker as symbol, close
     FROM `trading-290017.daily_market_data_equity.daily_simfin`
     WHERE TRUE
-    AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 100 DAY)
+    AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 150 DAY)
     ORDER BY date ASC, symbol
 """
 
@@ -101,6 +102,9 @@ def _get_r2_score(y, days):
 
 def _get_return(y, days):
     l = len(y)
+    if l == 0:
+        print('length is zero')
+        return 0
     head = max(0, l - days)
     return (y[-1] - y[head]) / y[head]
 
@@ -114,9 +118,8 @@ def get_momentum_df(df):
     # m score
     m_scores_per_symbol = defaultdict(list)
     symbols = df.close.dropna().index.levels[1]
-    m_days = MOMENTUM_SCORE_DAYS
     for symbol in symbols:
-        for days in m_days:
+        for days in MOMENTUM_SCORE_DAYS:
             try:
                 m_scores_per_symbol[symbol].append(_get_momentum_score(df.close.dropna().xs(symbol, level=1).values, days))
             except KeyError as e:
@@ -124,7 +127,30 @@ def get_momentum_df(df):
 
     recent_date = df.index.get_level_values(0)[-1]
     df_recent = df.xs(recent_date, level=0)
-    df_mscores = pd.DataFrame.from_dict(m_scores_per_symbol, orient='index', columns=['m_score{d}'.format(d=m_day) for m_day in m_days])
+    df_mscores = pd.DataFrame.from_dict(m_scores_per_symbol, orient='index', columns=['m_score{d}'.format(d=m_day) for m_day in MOMENTUM_SCORE_DAYS])
+    df_mscores = df_mscores.set_index(df_mscores.index.rename('symbol')).join(df_recent).dropna()
+    return df_mscores
+
+def _get_reverse_momentum_score(y, days):
+    anochor = int(days * 2 / 3)
+    head1 = max(0, len(y) - days)
+    head2 = max(0, len(y) - days + anochor)
+    return -1 * _get_momentum_score(y[head1:head2], anochor) + _get_momentum_score(y[head2:], days - anochor)
+
+def get_reverse_momentum_df(df):
+    # m score
+    m_scores_per_symbol = defaultdict(list)
+    symbols = df.close.dropna().index.levels[1]
+    for symbol in symbols:
+        for days in MOMENTUM_SCORE_DAYS:
+            try:
+                m_scores_per_symbol[symbol].append(_get_reverse_momentum_score(df.close.dropna().xs(symbol, level=1).values, days))
+            except KeyError as e:
+                print(e)
+
+    recent_date = df.index.get_level_values(0)[-1]
+    df_recent = df.xs(recent_date, level=0)
+    df_mscores = pd.DataFrame.from_dict(m_scores_per_symbol, orient='index', columns=['m_score{d}'.format(d=m_day) for m_day in MOMENTUM_SCORE_DAYS])
     df_mscores = df_mscores.set_index(df_mscores.index.rename('symbol')).join(df_recent).dropna()
     return df_mscores
 
