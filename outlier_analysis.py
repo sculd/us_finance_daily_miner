@@ -25,7 +25,7 @@ _polygon_client = RESTClient(_POLYGON_API_KEY)
 _regr = linear_model.LinearRegression()
 
 RTR_DAYS = [1, 5, 20, 60]
-REVERSE_RTR_DAYS = [20, 60]
+REVERSE_RTR_DAYS = [20, 40, 60]
 MOMENTUM_SCORE_DAYS = [20, 60]
 
 _QUERY = """
@@ -67,8 +67,9 @@ def _get_reverse_rtr_(s):
             return 0
         return (s[tail] - s[head]) / s[anchor]
 
-    for i in range(n):
-        t_rev_rtr = -local_rtr(l-n, l-n+i, l-n) + local_rtr(l-n+i, l-1, l-n)
+    # the reverse initial move should account for at least half
+    for i in (int(n * 2 / 3),):
+        t_rev_rtr = -1 * local_rtr(l-n, l-n+i, l-n) + 1 * local_rtr(l-n+i, l-1, l-n)
         if abs(t_rev_rtr) > abs(rev_rtr):
             rev_rtr = t_rev_rtr
     return rev_rtr
